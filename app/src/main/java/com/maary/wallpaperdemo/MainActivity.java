@@ -10,6 +10,7 @@ import android.annotation.SuppressLint;
 import android.app.WallpaperManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.BlurMaskFilter;
 import android.graphics.Insets;
 import android.graphics.Point;
 import android.graphics.Rect;
@@ -32,12 +33,12 @@ import android.widget.RelativeLayout;
 import android.widget.ScrollView;
 import android.widget.Toast;
 
+import com.hoko.blur.HokoBlur;
+import com.vansuita.gaussianblur.GaussianBlur;
+
 import java.io.IOException;
 
 public class MainActivity extends AppCompatActivity {
-
-    //Boolean isVertical = true;
-    //Boolean suitable = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,19 +46,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
 
-        Bitmap bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.r);
-
-        //TODO:Add support for api level > 30
-
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.R){
-            WindowMetrics windowMetrics = getWindowManager().getMaximumWindowMetrics();
-            Point point = new Point(windowMetrics.getBounds().width(),windowMetrics.getBounds().height());
-            Log.e("dw11",String.valueOf(point.x));
-            Log.e("dh11",String.valueOf(point.y));
-        int device_height = point.y;
-        int device_width = point.x;
-        }
-
+        Bitmap bitmap = BitmapFactory.decodeResource(getApplicationContext().getResources(), R.drawable.horizontal);
 
         Display display = getWindowManager().getDefaultDisplay();
         Point size = new Point();
@@ -71,21 +60,7 @@ public class MainActivity extends AppCompatActivity {
         double device_scale = (double) device_height / device_width;
         double bitmap_scale = (double) bitmap_full_height / bitmap_full_width;
 
-        /*
-        if (device_scale > bitmap_scale){
-            isVertical = false;
-        }else if (device_scale < bitmap_scale){
-            isVertical = true;
-        }else{
-            suitable = true;
-        }
-        */
-
         Boolean isVertical = ( device_scale < bitmap_scale );
-
-        Log.e("dhdw", String.valueOf((double) device_height / device_width));
-        Log.e("bhbw", String.valueOf((double) bitmap_full_height / bitmap_full_width));
-
 
         final WallpaperManager wallpaperManager = WallpaperManager.getInstance(getApplicationContext());
         //Horizontal Scroll View
@@ -119,7 +94,6 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout.LayoutParams hImageLayoutParams =
                 new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT,
                         ViewGroup.LayoutParams.MATCH_PARENT);
-        //imageView.setLayoutParams(hImageLayoutParams);
 
         ViewGroup.LayoutParams vImageLayoutParams =
                 new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
@@ -155,9 +129,12 @@ public class MainActivity extends AppCompatActivity {
                 return insets.consumeSystemWindowInsets();
             }
         });
+        final int[] scale = {0};
+
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+
                 Rect cord= new Rect(0,0,0,0);
                 if(isVertical){
                     float scale = (float) bitmap_full_height / verticalScrollView.getChildAt(0).getHeight();
@@ -170,6 +147,7 @@ public class MainActivity extends AppCompatActivity {
                     result_height = Math.min(result_height, bitmap_full_height);
 
                     cord = new Rect(0, start, result_width, start + result_height);
+
                 }else{
                     float scale = (float) bitmap_full_width / horizontalScrollView.getChildAt(0).getWidth();
 
@@ -180,16 +158,21 @@ public class MainActivity extends AppCompatActivity {
                     result_height = Math.min(result_height, bitmap_full_height);
 
                     cord = new Rect(start,0,start+result_width,result_height);
-                }
 
-                //Bitmap crop = Bitmap.createBitmap(bitmap, start,0, result_width, result_height);
-                //imageView.setImageBitmap(crop);
+                    Bitmap crop = Bitmap.createBitmap(bitmap, start,0, result_width, result_height);
+                    crop = HokoBlur.with(getApplicationContext()).blur(crop);
+
+                    Log.e("blurEnd","1");
+                    imageView.setImageBitmap(crop);
+                }
 
                 try {
                     wallpaperManager.setBitmap(bitmap, cord, true, WallpaperManager.FLAG_SYSTEM);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+
+
             }
         });
 
